@@ -23,8 +23,9 @@ type Client struct {
 // NewClient creates a new GitHub client with the provided authentication token.
 func NewClient(ghCtx *githubactions.GitHubContext, githubToken string) *Client {
 	c := &Client{
-		client:    github.NewClient(nil).WithAuthToken(githubToken),
-		githubCtx: ghCtx,
+		client:         github.NewClient(nil).WithAuthToken(githubToken),
+		githubCtx:      ghCtx,
+		commitsPRCache: make(map[int64][]*github.RepositoryCommit),
 	}
 	c.git = c.client.Git
 	return c
