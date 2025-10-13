@@ -35,6 +35,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/backbot
+          flavor: latest=false # Disable 'latest' flavor to avoid automatic 'latest' tag generation
           tags: |
             type=edge,event=push,branch=main
             type=semver,pattern={{version}}
