@@ -23,11 +23,11 @@ inputs:
     description: 'Title for the backport pull request (default: "[Backport ${target_branch}] ${original_pr_title}")'
   pr_description:
     required: true
-    default: |-
+    default: '
       Backport of #${original_pr_number} to ${target_branch}, triggered by a label.
 
       ---
-      This is an automated backport PR. Please review it carefully before merging.
+      This is an automated backport PR. Please review it carefully before merging.'
     description: 'Description for the backport pull request (default: "Backport of #${original_pr_number} to ${target_branch}")'
   label_pattern:
     required: true
