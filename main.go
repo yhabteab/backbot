@@ -21,8 +21,5 @@ func main() {
 	if ghCtx.EventName != "pull_request" && ghCtx.EventName != "pull_request_target" {
 		githubactions.Fatalf("backbot only supports 'pull_request' and 'pull_request_target' events, got: %s", ghCtx.EventName)
 	}
-	if ghCtx.Action != "closed" {
-		githubactions.Fatalf("backbot runs only when a pull request is closed, got: %s", ghCtx.Action)
-	}
 	backport.Run(context.Background(), cfg, ghCtx)
 }
