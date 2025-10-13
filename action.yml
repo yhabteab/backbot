@@ -33,7 +33,7 @@ inputs:
     required: true
     default: '^backport-to-(support\/\d+\.\d+)$'
     description: 'Regex pattern to match labels for determining target branches (default: "^backport-to-(support\/\d+\.\d+)$")'
-  copy_label_pattern:
+  copy_labels_pattern:
     description: 'Regex pattern to match labels for copying from the original PR to the backport PR (default empty)'
   conflict_handling:
     required: true

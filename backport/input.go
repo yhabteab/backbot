@@ -26,11 +26,11 @@ type Input struct {
 	// Description is the description of the backport pull request.
 	Description string `env:"PR_DESCRIPTION"`
 
-	// CopyLabelPattern is a regex pattern to match labels that should be copied from the original pull request
+	// CopyLabelsPattern is a regex pattern to match labels that should be copied from the original pull request
 	// to the backport pull request. If not set, none are copied.
-	CopyLabelPattern string `env:"COPY_LABEL_PATTERN"`
+	CopyLabelsPattern string `env:"COPY_LABELS_PATTERN"`
 
-	// copyLabelRegex is the compiled regex from CopyLabelPattern. This is not set from environment variables.
+	// copyLabelRegex is the compiled regex from CopyLabelsPattern. This is not set from environment variables.
 	copyLabelRegex *regexp.Regexp `env:"-"`
 
 	// LabelPattern is a regex pattern to match labels that should be used to determine target branches for backporting.
@@ -76,10 +76,10 @@ func (in *Input) Validate() error {
 	if in.Description == "" {
 		return fmt.Errorf("pr_description is required")
 	}
-	if in.CopyLabelPattern != "" {
-		re, err := regexp.Compile(in.CopyLabelPattern)
+	if in.CopyLabelsPattern != "" {
+		re, err := regexp.Compile(in.CopyLabelsPattern)
 		if err != nil {
-			return fmt.Errorf("failed to compile copy_label_pattern regex: %w", err)
+			return fmt.Errorf("failed to compile copy_labels_pattern regex: %w", err)
 		}
 		in.copyLabelRegex = re
 	}
