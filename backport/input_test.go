@@ -21,7 +21,7 @@ func TestInput(t *testing.T) {
 		t.Setenv(k, v)
 	}
 
-	input, err := GetInput()
+	input, err := LoadInputsFromEnv()
 	require.NoError(t, err)
 	require.Equal(t, "token", input.GitHubToken)
 	require.Equal(t, "committer", input.Committer)
@@ -30,5 +30,6 @@ func TestInput(t *testing.T) {
 	require.Equal(t, "description", input.Description)
 	require.Equal(t, "copy-label-pattern", input.CopyLabelPattern)
 	require.Equal(t, "label-pattern", input.LabelPattern)
-	require.Equal(t, "abort", input.ConflictResolution)
+	require.Equal(t, "abort", input.ConflictHandling)
+	require.Equal(t, "skip", input.MergeCommitHandling)
 }
