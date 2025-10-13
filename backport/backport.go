@@ -116,7 +116,7 @@ func (b *backPorter) Run(ctx context.Context) error {
 	// Now, alter the commit committer info to the configured committer. The author info is preserved.
 	// Also, check for merge commits in the commit list to cherry-pick and handle them according to configuration.
 	for _, commit := range repositoryCommits {
-		if github.IsMergeCommit(commit.Commit) {
+		if github.IsMergeCommit(commit) {
 			if b.config.MergeCommitHandling == "skip" {
 				githubactions.Infof("Skipping merge commit %s as per configuration", commit.GetSHA())
 				continue
@@ -190,13 +190,14 @@ func (b *backPorter) cherryPickCommits(
 	labelsToAdd ...string,
 ) *v75github.PullRequest {
 	// addParent adds a parent commit to the given commit, handling merge commits appropriately.
-	addParent := func(commit *v75github.Commit, parentSHA string) {
+	addParent := func(commit *v75github.RepositoryCommit, parentSHA string) {
 		if github.IsMergeCommit(commit) {
 			// For merge commits, we need to preserve all parents.
-			commit.Parents = append(commit.Parents, &v75github.Commit{SHA: v75github.Ptr(parentSHA)})
+			commit.Commit.Parents = append(commit.Parents, &v75github.Commit{SHA: v75github.Ptr(parentSHA)})
 		} else {
+			commit.Commit.Parents = commit.Parents
 			// For non-merge commits, they should have exactly one parent.
-			commit.Parents = []*v75github.Commit{{SHA: v75github.Ptr(parentSHA)}}
+			commit.Commit.Parents = []*v75github.Commit{{SHA: v75github.Ptr(parentSHA)}}
 		}
 	}
 
@@ -214,10 +215,10 @@ func (b *backPorter) cherryPickCommits(
 		if previousCommit == nil {
 			// First commit to cherry-pick onto the backport branch must have the
 			// backport branch's latest commit as its parent.
-			addParent(commit.Commit, backport.GetObject().GetSHA())
+			addParent(commit, backport.GetObject().GetSHA())
 		} else {
 			// Subsequent commits to cherry-pick must have the previous commit as their parent.
-			addParent(commit.Commit, previousCommit.GetSHA())
+			addParent(commit, previousCommit.GetSHA())
 		}
 		newCommit, err := b.github.CreateCommit(ctx, commit.Commit)
 		if err != nil {

@@ -6,11 +6,11 @@ import (
 	"github.com/google/go-github/v75/github"
 )
 
-// IsMergeCommit checks if the given [github.Commit] is a merge commit.
+// IsMergeCommit checks if the given [github.RepositoryCommit] is a merge commit.
 //
 // A merge commit is defined as a commit that has more than one parent.
 // The function returns true if the commit is a merge commit, false otherwise.
-func IsMergeCommit(commit *github.Commit) bool {
+func IsMergeCommit(commit *github.RepositoryCommit) bool {
 	return len(commit.Parents) > 1
 }
 

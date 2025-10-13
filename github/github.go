@@ -179,7 +179,7 @@ func (c *Client) MergeKind(ctx context.Context, pr *github.PullRequest) (MergeKi
 		if err != nil {
 			return MergeInvalid, fmt.Errorf("failed to get parents of merge commit %s: %w", mergeCommitSHA, err)
 		}
-		if IsMergeCommit(mergeCommit.Commit) {
+		if IsMergeCommit(mergeCommit) {
 			return MergeCommit, nil
 		}
 		if pr.GetCommits() == 1 { // Single commit PRs are treated as squash merges
