@@ -145,7 +145,7 @@ func (c *Client) GetCommits(ctx context.Context, pr *github.PullRequest) ([]*git
 			return nil, err
 		}
 		allCommits = append(allCommits, commits...)
-		if resp.NextPage == 0 || float64(resp.NextPage) > math.Ceil(float64(pr.GetCommits()/100)) {
+		if resp.NextPage == 0 || float64(resp.NextPage) > math.Ceil(float64(pr.GetCommits())/100) {
 			closeResponseBody(resp)
 			break
 		}
