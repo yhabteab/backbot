@@ -328,7 +328,7 @@ func (b *backPorter) getTargetRefs(ctx context.Context, sourcePr *v75github.Pull
 	}
 	githubactions.Infof("Finding target branches matching pattern: %s", b.config.LabelPattern)
 
-	repo, _ := b.github.Repo()
+	_, repo := b.github.Repo()
 
 	var branches []*v75github.Reference
 	for _, label := range sourcePr.Labels {
