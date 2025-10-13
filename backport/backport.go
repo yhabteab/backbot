@@ -359,13 +359,13 @@ func (b *backPorter) getTargetRefs(ctx context.Context, sourcePr *v75github.Pull
 
 // getLabelsToAdd determines the labels to add to backport PRs based on the configuration and source PR.
 //
-// This will only return labels that match the CopyLabelPattern excluding any labels that were used to
+// This will only return labels that match the CopyLabelsPattern excluding any labels that were used to
 // determine target branches. It returns a slice of labels to add or an error if the operation fails.
 func (b *backPorter) getLabelsToAdd(sourcePr *v75github.PullRequest) ([]string, error) {
 	if b.config.copyLabelRegex == nil || len(sourcePr.Labels) == 0 {
 		return nil, nil
 	}
-	githubactions.Infof("Finding labels to copy matching pattern: %s", b.config.CopyLabelPattern)
+	githubactions.Infof("Finding labels to copy matching pattern: %s", b.config.CopyLabelsPattern)
 
 	var labels []string
 	for _, label := range sourcePr.Labels {
@@ -374,10 +374,10 @@ func (b *backPorter) getLabelsToAdd(sourcePr *v75github.PullRequest) ([]string, 
 			continue
 		}
 		if !b.config.copyLabelRegex.MatchString(label.GetName()) {
-			githubactions.Infof("Label '%s' does not match pattern '%s'", label.GetName(), b.config.CopyLabelPattern)
+			githubactions.Infof("Label '%s' does not match pattern '%s'", label.GetName(), b.config.CopyLabelsPattern)
 			continue
 		}
-		githubactions.Infof("Label '%s' matches pattern '%s', adding to backport PR labels", label.GetName(), b.config.CopyLabelPattern)
+		githubactions.Infof("Label '%s' matches pattern '%s', adding to backport PR labels", label.GetName(), b.config.CopyLabelsPattern)
 		labels = append(labels, label.GetName())
 	}
 	return labels, nil
