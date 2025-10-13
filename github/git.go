@@ -54,6 +54,29 @@ func (c *Client) CreateRef(ctx context.Context, head, sha string) (*github.Refer
 	return ref, nil
 }
 
+// UpdateRef updates an existing git reference (branch) to point to a new commit SHA.
+//
+// It takes the context, branch name, new commit SHA, and a boolean indicating whether to force the update.
+// It returns the updated reference or an error if the operation fails.
+func (c *Client) UpdateRef(ctx context.Context, head, sha string, force bool) (*github.Reference, error) {
+	owner, repo := c.Repo()
+	githubactions.Infof("Updating branch %s to commit %s in %s/%s", head, sha, owner, repo)
+
+	ref, resp, err := c.git.UpdateRef(ctx, owner, repo, head, github.UpdateRef{
+		SHA:   sha,
+		Force: github.Ptr(force),
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer closeResponseBody(resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code %d", resp.StatusCode)
+	}
+	return ref, nil
+}
+
 // DeleteRef deletes the specified git reference (branch) from the repository.
 //
 // It returns an error if the operation fails.

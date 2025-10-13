@@ -134,6 +134,11 @@ func (b *backPorter) Run(ctx context.Context) error {
 	}
 	repositoryCommits = nil // Nil out the original slice to free memory (if any)
 
+	if len(commitsToCherryPick) == 0 {
+		githubactions.Infof("No commits to cherry-pick after applying configuration, exiting.")
+		return b.github.CreateComment(ctx, prNumber, "⚠️ No commits to cherry-pick after applying configuration, skipping backport.")
+	}
+
 	labelsToAdd, err := b.getLabelsToAdd(sourcePr)
 	if err != nil {
 		return err
@@ -198,7 +203,7 @@ func (b *backPorter) cherryPickCommits(
 	backportBranch := trimRefPrefix(backport.GetRef())
 	// Ensure the backport branch is deleted if we exit early due to an error.
 	deleteRef := func() {
-		if err := b.github.DeleteRef(ctx, backportBranch); err != nil {
+		if err := b.github.DeleteRef(ctx, backport.GetRef()); err != nil {
 			githubactions.Errorf("Failed to delete backport branch %s: %v", backportBranch, err)
 		}
 	}
@@ -227,11 +232,20 @@ func (b *backPorter) cherryPickCommits(
 					if i == 0 {
 						// If the first commit to cherry-pick causes a conflict, we need to create an empty commit
 						// on the backport branch to serve as the base for the draft PR.
-						if _, err := b.github.CreateCommit(ctx, createEmptyCommit(backport)); err != nil {
+						if emptyCommit, err := b.github.CreateCommit(ctx, createEmptyCommit(backport)); err != nil {
 							githubactions.Errorf("Failed to create empty commit on backport branch %s: %v", backportBranch, err)
 							deleteRef()
 							return nil
+						} else {
+							newCommit = emptyCommit
 						}
+					} else {
+						newCommit = previousCommit // Use the last successfully cherry-picked commit as the base
+					}
+					if backport, err = b.github.UpdateRef(ctx, backport.GetRef(), newCommit.GetSHA(), false); err != nil {
+						githubactions.Errorf("Failed to update backport branch %s: %v", backportBranch, err)
+						deleteRef()
+						return nil
 					}
 					newPr, err := b.github.CreatePR(ctx, b.makeNewPullRequest(sourcePr, target, backport, true))
 					if err != nil {
@@ -275,13 +289,20 @@ func (b *backPorter) cherryPickCommits(
 		)
 	}
 
+	// Update the backport branch to point to the latest cherry-picked commit.
+	if ref, err := b.github.UpdateRef(ctx, backportBranch, previousCommit.GetSHA(), false); err != nil {
+		githubactions.Errorf("Failed to update backport branch %s: %v", backportBranch, err)
+		deleteRef()
+		return nil
+	} else {
+		backport = ref
+	}
+
 	// We've finished processing all commits for this target branch, so create the PR.
 	newPr, err := b.github.CreatePR(ctx, b.makeNewPullRequest(sourcePr, target, backport, false))
 	if err != nil {
 		githubactions.Errorf("Failed to create PR for backport branch %s: %v", backportBranch, err)
-		if err := b.github.DeleteRef(ctx, backportBranch); err != nil {
-			githubactions.Errorf("Failed to delete backport branch %s: %v", backportBranch, err)
-		}
+		deleteRef()
 		return nil
 	}
 	githubactions.Infof("Created backport PR #%d for branch %s", newPr.GetNumber(), trimRefPrefix(target.GetRef()))
@@ -346,8 +367,8 @@ func (b *backPorter) getTargetRefs(ctx context.Context, sourcePr *v75github.Pull
 		ref, err := b.github.GetRef(ctx, branch)
 		if err != nil || ref == nil {
 			githubactions.Warningf(
-				"Branch '%s' extracted from label '%s' does not exist in repository %s.",
-				branch, label.GetName(), repo,
+				"Branch '%s' extracted from label '%s' does not exist in repository %s. %s",
+				branch, label.GetName(), repo, err,
 			)
 			continue
 		}
