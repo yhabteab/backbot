@@ -10,7 +10,7 @@ func TestInput(t *testing.T) {
 	env := map[string]string{
 		"INPUT_GITHUB_TOKEN":        "token",
 		"INPUT_COMMITTER":           "committer",
-		"INPUT_EMAIL":               "email",
+		"INPUT_COMMITTER_EMAIL":     "email",
 		"INPUT_PR_TITLE":            "title",
 		"INPUT_PR_DESCRIPTION":      "description",
 		"INPUT_COPY_LABELS_PATTERN": "copy-labels-pattern",

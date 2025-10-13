@@ -18,7 +18,7 @@ type Input struct {
 	Committer string `env:"COMMITTER"`
 
 	// Email is the email of the committer to use for git commits.
-	Email string `env:"EMAIL"`
+	Email string `env:"COMMITTER_EMAIL"`
 
 	// Title is the title of the backport pull request.
 	Title string `env:"PR_TITLE"`
