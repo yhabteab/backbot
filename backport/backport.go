@@ -291,7 +291,7 @@ func (b *backPorter) cherryPickCommits(
 	}
 
 	// Update the backport branch to point to the latest cherry-picked commit.
-	if ref, err := b.github.UpdateRef(ctx, backportBranch, previousCommit.GetSHA(), false); err != nil {
+	if ref, err := b.github.UpdateRef(ctx, backport.GetRef(), previousCommit.GetSHA(), false); err != nil {
 		githubactions.Errorf("Failed to update backport branch %s: %v", backportBranch, err)
 		deleteRef()
 		return nil
