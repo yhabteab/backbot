@@ -1,0 +1,49 @@
+name: Backbot - Automatic PR Backporter
+description: A GitHub Action to automatically backport pull requests to specified target branches based on labels.
+author: Yonas Habteab
+branding:
+  icon: git-branch
+  color: blue
+
+inputs:
+  github_token:
+    description: 'GitHub token with repo access'
+    required: true
+  committer:
+    required: true
+    default: 'github-actions[bot]'
+    description: 'Name for the committer of the backport PR'
+  committer_email:
+    required: true
+    default: 'github-actions[bot]@users.noreply.github.com'
+    description: 'Email for the committer of the backport PR'
+  pr_title:
+    required: true
+    default: '[Backport ${target_branch}] ${original_pr_title}'
+    description: 'Title for the backport pull request (default: "[Backport ${target_branch}] ${original_pr_title}")'
+  pr_description:
+    required: true
+    default: |-
+      Backport of #${original_pr_number} to ${target_branch}, triggered by a label.
+
+      ---
+      This is an automated backport PR. Please review it carefully before merging.
+    description: 'Description for the backport pull request (default: "Backport of #${original_pr_number} to ${target_branch}")'
+  label_pattern:
+    required: true
+    default: '^backport-to-(support\/\d+\.\d+)$'
+    description: 'Regex pattern to match labels for determining target branches (default: "^backport-to-(support\/\d+\.\d+)$")'
+  copy_label_pattern:
+    description: 'Regex pattern to match labels for copying from the original PR to the backport PR (default empty)'
+  conflict_handling:
+    required: true
+    default: 'abort'
+    description: 'Conflict resolution strategy: "abort" (default) or "draft" to create a draft PR on conflict'
+  merge_commit_handling:
+    required: true
+    default: 'skip'
+    description: 'Handles merge commits encountered as part of the original PR commit history. Options are "skip" (default), "abort", or any other value to include them.'
+
+runs:
+  using: docker
+  image: docker://ghcr.io/yhabteab/backbot:latest
