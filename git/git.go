@@ -86,7 +86,7 @@ func (g *Git) CherryPick(ctx context.Context, commitOnConflict bool, commits ...
 	cmd := append([]string{"cherry-pick", "--empty=drop", "--allow-empty", "-x"}, commits...)
 	githubactions.Infof("Cherry-picking commits using git %v", cmd)
 
-	if err := g.runCmd(ctx, append(cmd, commits...)...); err != nil {
+	if err := g.runCmd(ctx, cmd...); err != nil {
 		cherryPickAbort := func() {
 			// Attempt to abort the cherry-pick operation if it failed
 			if abortErr := g.runCmd(ctx, "cherry-pick", "--abort"); abortErr != nil {
