@@ -7,6 +7,14 @@ import (
 	"github.com/icinga/icinga-go-library/config"
 )
 
+const (
+	MergeCommitHandlingSkip  = "skip"  // Skip merge commits when cherry-picking.
+	MergeCommitHandlingAbort = "abort" // Abort the backport if any merge commits are found.
+
+	ConflictHandlingAbort = "abort" // Abort the backport if there are conflicts.
+	ConflictHandlingDraft = "draft" // Create a draft PR if there are conflicts.
+)
+
 // Input represents the inputs to the GitHub Action.
 type Input struct {
 	// GitHubToken is the GitHub token to use for authentication.

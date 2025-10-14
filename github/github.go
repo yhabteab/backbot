@@ -15,20 +15,16 @@ type Client struct {
 	client    *github.Client               // GitHub API client
 	githubCtx *githubactions.GitHubContext // GitHub Actions context
 
-	git *github.GitService // GitHub Git service
-
 	commitsPRCache map[int64][]*github.RepositoryCommit // Cache for commits in PRs to avoid redundant API calls.
 }
 
 // NewClient creates a new GitHub client with the provided authentication token.
 func NewClient(ghCtx *githubactions.GitHubContext, githubToken string) *Client {
-	c := &Client{
+	return &Client{
 		client:         github.NewClient(nil).WithAuthToken(githubToken),
 		githubCtx:      ghCtx,
 		commitsPRCache: make(map[int64][]*github.RepositoryCommit),
 	}
-	c.git = c.client.Git
-	return c
 }
 
 // Repo fetches the owner and repository name from the GitHub context.
