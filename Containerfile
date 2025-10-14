@@ -18,11 +18,13 @@ RUN --mount=type=bind,source=.,target=.,readonly \
       -o /usr/local/bin/backbot \
       .
 
-FROM scratch
+FROM alpine:3
+
+# Install git required to perform git cerry-pick operations
+RUN apk --no-cache add git
 
 WORKDIR /
 
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /usr/local/bin/backbot .
 
 ENTRYPOINT ["/backbot"]
