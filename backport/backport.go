@@ -88,7 +88,7 @@ func (b *backPorter) Run(ctx context.Context) error {
 		githubactions.Infof("Pull request was merged with a squash commit, cherry-picking the squash commit %s", sourcePr.GetMergeCommitSHA())
 		commitSHAs = []string{sourcePr.GetMergeCommitSHA()}
 	case github.MergeCommit:
-		githubactions.Infof("Pull request was merged with a merge commit, cherry-picking all commits from %d excluding the merge commit", srcPrNumber)
+		githubactions.Infof("Pull request was merged with a merge commit, cherry-picking all commits from #%d excluding the merge commit", srcPrNumber)
 		commits, err := b.github.GetCommits(ctx, sourcePr)
 		if err != nil {
 			return err
@@ -107,10 +107,11 @@ func (b *backPorter) Run(ctx context.Context) error {
 		githubactions.Fatalf("Could not determine merge strategy '%s' for pull request #%d, skipping backport.", mk, srcPrNumber)
 	}
 
-	mergeCommitSHAs, err := b.git.FindCommitRange(ctx, fmt.Sprintf("%s^..%s", commitSHAs[0], commitSHAs[len(commitSHAs)-1]))
+	mergeCommitSHAs, err := b.git.FindCommitRange(ctx, "--merges", fmt.Sprintf("%s^..%s", commitSHAs[0], commitSHAs[len(commitSHAs)-1]))
 	if err != nil {
 		return err
 	}
+	githubactions.Infof("Found merge commits in PR #%d: %v", srcPrNumber, mergeCommitSHAs)
 
 	if len(mergeCommitSHAs) != 0 {
 		if b.config.MergeCommitHandling == MergeCommitHandlingAbort {
