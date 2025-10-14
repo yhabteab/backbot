@@ -87,24 +87,20 @@ func (g *Git) CherryPick(ctx context.Context, commitOnConflict bool, commits ...
 	githubactions.Infof("Cherry-picking commits using git %v", cmd)
 
 	if err := g.runCmd(ctx, cmd...); err != nil {
-		cherryPickAbort := func() {
-			// Attempt to abort the cherry-pick operation if it failed
-			if abortErr := g.runCmd(ctx, "cherry-pick", "--abort"); abortErr != nil {
-				githubactions.Warningf("Failed to abort cherry-pick after error: %v", abortErr)
-			}
+		// Attempt to always abort cherry-pick on error, otherwise this will lead to some weird permission
+		// error when trying to commit and push the current state with the cherry-pick in progress. Instead,
+		// just create an empty draft commit without any changes that the user can resolve manually.
+		if abortErr := g.runCmd(ctx, "cherry-pick", "--abort"); abortErr != nil {
+			githubactions.Warningf("Failed to abort cherry-pick after error: %v", abortErr)
 		}
 
-		if commitOnConflict {
-			if IsConflictErr(err) {
-				githubactions.Warningf("Conflict occurred while cherry-picking commits %v, creating draft commit: %v", commits, err)
-				if commitErr := g.runCmd(ctx, "commit", "--allow-empty", "--all", "--message", "Backport commit with conflicts, needs manual resolution"); commitErr != nil {
-					cherryPickAbort()
-					err = fmt.Errorf("failed to create draft commit after conflict: %v (original error: %w)", commitErr, err)
-				}
-				return err
+		if commitOnConflict && IsConflictErr(err) {
+			githubactions.Warningf("Conflict occurred while cherry-picking commits %v, creating draft commit: %v", commits, err)
+			if commitErr := g.runCmd(ctx, "commit", "--allow-empty", "--all", "--message", "Backport commit with conflicts, needs manual resolution"); commitErr != nil {
+				err = fmt.Errorf("failed to create draft commit after conflict: %v (original error: %w)", commitErr, err)
 			}
+			return err
 		}
-		cherryPickAbort()
 		return fmt.Errorf("failed to cherry-pick commits %v: %w", commits, err)
 	}
 	return nil
