@@ -29,7 +29,7 @@ type backPorter struct {
 func Run(ctx context.Context, cfg *Input, ghCtx *githubactions.GitHubContext) {
 	b := &backPorter{
 		github: github.NewClient(ghCtx, cfg.GitHubToken),
-		git:    git.NewGit(ghCtx, cfg.Committer, cfg.Email),
+		git:    git.NewGit(ghCtx),
 		config: cfg,
 	}
 	if err := b.Run(ctx); err != nil {
