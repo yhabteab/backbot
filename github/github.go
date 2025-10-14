@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -9,6 +10,9 @@ import (
 	"github.com/google/go-github/v75/github"
 	"github.com/sethvargo/go-githubactions"
 )
+
+// RepoistoryDispatchEvent is the event type used when dispatching repository events.
+const RepoistoryDispatchEvent = "pull_request_created_by_backbot"
 
 // Client wraps the GitHub client to provide methods for interacting with GitHub API.
 type Client struct {
@@ -216,6 +220,39 @@ func (c *Client) CreateComment(ctx context.Context, issueNumber int64, body stri
 	defer closeResponseBody(resp)
 
 	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+	}
+	return nil
+}
+
+// DisPatchPrCreatedEvent dispatches a `repository_dispatch` event with the type [RepoistoryDispatchEvent].
+//
+// This can be used to trigger workflows that listen to this event type.
+func (c *Client) DisPatchPrCreatedEvent(ctx context.Context, pr *github.PullRequest) error {
+	owner, repo := c.Repo()
+	githubactions.Infof("Dispatching repository event '%s' to %s/%s for PR #%d", RepoistoryDispatchEvent, owner, repo, pr.GetNumber())
+
+	data := map[string]any{
+		"pull_request_number": pr.GetNumber(),
+		"triggered_by":        "backbot",
+		"owner":               owner,
+		"repository":          repo,
+	}
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal client payload: %w", err)
+	}
+	payload := json.RawMessage(payloadBytes)
+	_, resp, err := c.client.Repositories.Dispatch(ctx, owner, repo, github.DispatchRequestOptions{
+		EventType:     RepoistoryDispatchEvent,
+		ClientPayload: &payload,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to dispatch created event for PR #%d: %w", pr.GetNumber(), err)
+	}
+	defer closeResponseBody(resp)
+
+	if resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
 	}
 	return nil
