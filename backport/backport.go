@@ -155,11 +155,6 @@ func (b *backPorter) Run(ctx context.Context) error {
 				githubactions.Errorf("Failed to add labels to backport PR for branch %s: %v", backportRef, err)
 			}
 
-			// Dispatch a repository event to allow further automation on the new backport PR.
-			if err := b.github.DisPatchPrCreatedEvent(ctx, newPr); err != nil {
-				githubactions.Errorf("Failed to dispatch '%s' repository event for backport PR #%d: %v", github.RepoistoryDispatchEvent, newPr.GetNumber(), err)
-			}
-
 			refList = append(refList, fmt.Sprintf("`%s`", targetRef))
 			prList += fmt.Sprintf("- #%d\n", newPr.GetNumber())
 		}
