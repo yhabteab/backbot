@@ -111,7 +111,6 @@ func (b *backPorter) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	githubactions.Infof("Found merge commits in PR #%d: %v", srcPrNumber, mergeCommitSHAs)
 
 	if len(mergeCommitSHAs) != 0 {
 		if b.config.MergeCommitHandling == MergeCommitHandlingAbort {
@@ -146,7 +145,7 @@ func (b *backPorter) Run(ctx context.Context) error {
 		githubactions.Infof("Creating backport branch %s for target branch %s", backportRef, targetRef)
 
 		// Checkout the new backport branch locally starting from the target branch.
-		if err := b.git.Checkout(ctx, backportRef, targetRef); err != nil {
+		if err := b.git.Checkout(ctx, backportRef, fmt.Sprintf("origin/%s", targetRef)); err != nil {
 			githubactions.Errorf("Failed to checkout backport branch %s: %v", backportRef, err)
 			continue
 		}
@@ -163,16 +162,17 @@ func (b *backPorter) Run(ctx context.Context) error {
 		}
 	}
 
+	if len(refList) == 0 {
+		githubactions.Infof("No backport PRs were created successfully, exiting.")
+		return b.github.CreateComment(ctx, srcPrNumber, "⚠️ No backport PRs were created successfully. See the GitHub Actions logs for details.")
+	}
+
 	// Finally, comment on the source PR with the results of the backport operation.
 	successBody := fmt.Sprintf(
 		"Successfully created backport PR(s) onto the following branch(es): %s\n\n---\n%s",
 		strings.Join(refList, ", "), prList,
 	)
-	if err := b.github.CreateComment(ctx, srcPrNumber, successBody); err != nil {
-		githubactions.Errorf("Failed to create comment on PR #%d: %v", srcPrNumber, err)
-		return err
-	}
-	return nil
+	return b.github.CreateComment(ctx, srcPrNumber, successBody)
 }
 
 // cherryPick attempts to cherry-pick the specified commits onto the backport branch.
