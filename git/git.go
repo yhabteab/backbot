@@ -97,7 +97,7 @@ func (g *Git) CherryPick(ctx context.Context, commitOnConflict bool, commits ...
 		if commitOnConflict {
 			if IsConflictErr(err) {
 				githubactions.Warningf("Conflict occurred while cherry-picking commits %v, creating draft commit: %v", commits, err)
-				if commitErr := g.runCmd(ctx, "commit", "--allow-empty", "--all", "--message", "Backport commit with conflicts, needs manual resolution"); err != nil {
+				if commitErr := g.runCmd(ctx, "commit", "--allow-empty", "--all", "--message", "Backport commit with conflicts, needs manual resolution"); commitErr != nil {
 					cherryPickAbort()
 					err = fmt.Errorf("failed to create draft commit after conflict: %v (original error: %w)", commitErr, err)
 				}
