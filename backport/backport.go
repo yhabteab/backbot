@@ -155,10 +155,8 @@ func (b *backPorter) Run(ctx context.Context) error {
 				githubactions.Errorf("Failed to add labels to backport PR for branch %s: %v", backportRef, err)
 			}
 
-			if !newPr.GetDraft() {
-				refList = append(refList, fmt.Sprintf("`%s`", targetRef))
-				prList += fmt.Sprintf("- #%d\n", newPr.GetNumber())
-			}
+			refList = append(refList, fmt.Sprintf("`%s`", targetRef))
+			prList += fmt.Sprintf("- #%d\n", newPr.GetNumber())
 		}
 	}
 
