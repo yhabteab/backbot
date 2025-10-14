@@ -30,6 +30,11 @@ func Configure(ghCtx *githubactions.GitHubContext, committer, email string) erro
 		return fmt.Errorf("failed to mark workspace '%s' as safe directory: %w", ghCtx.Workspace, err)
 	}
 
+	githubactions.Infof("Disabling git merge conflict advice")
+	if err := g.runCmd(context.Background(), "config", "--global", "advice.mergeConflict", "false"); err != nil {
+		return fmt.Errorf("failed to disable git merge conflict advice: %w", err)
+	}
+
 	githubactions.Infof("Configuring git committer name and email")
 	if err := g.runCmd(context.Background(), "config", "--global", "user.name", committer); err != nil {
 		return fmt.Errorf("failed to set git committer name: %w", err)
@@ -89,6 +94,10 @@ func (g *Git) CherryPick(ctx context.Context, commitOnConflict bool, commits ...
 					return fmt.Errorf("failed to create draft commit after conflict: %w", err)
 				}
 			}
+		}
+		// Attempt to abort the cherry-pick operation if it failed
+		if abortErr := g.runCmd(ctx, "cherry-pick", "--abort"); abortErr != nil {
+			githubactions.Warningf("Failed to abort cherry-pick after error: %v", abortErr)
 		}
 		return fmt.Errorf("failed to cherry-pick commits %v: %w", commits, err)
 	}
