@@ -14,15 +14,31 @@ import (
 
 // Git holds configuration for git operations.
 type Git struct {
-	Committer string // The name of the committer
-	Email     string // The email of the committer
-
 	githubCtx *githubactions.GitHubContext
 }
 
 // NewGit creates a new Git instance with the provided committer name and email.
-func NewGit(ghCtx *githubactions.GitHubContext, committer, email string) *Git {
-	return &Git{Committer: committer, Email: email, githubCtx: ghCtx}
+func NewGit(ghCtx *githubactions.GitHubContext) *Git { return &Git{githubCtx: ghCtx} }
+
+// Configure sets up git with the specified committer name and email, and marks the workspace as a safe directory.
+func Configure(ghCtx *githubactions.GitHubContext, committer, email string) error {
+	g := NewGit(ghCtx)
+	githubactions.Infof("Marking GitHub workspace '%s' as a safe directory", ghCtx.Workspace)
+	// Mark the current workspace as a safe directory to avoid some weird git errors [^1].
+	// [^1]: https://github.com/actions/runner-images/issues/6775
+	if err := g.runCmd(context.Background(), "config", "--global", "--add", "safe.directory", ghCtx.Workspace); err != nil {
+		return fmt.Errorf("failed to mark workspace '%s' as safe directory: %w", ghCtx.Workspace, err)
+	}
+
+	githubactions.Infof("Configuring git committer name and email")
+	if err := g.runCmd(context.Background(), "config", "--global", "user.name", committer); err != nil {
+		return fmt.Errorf("failed to set git committer name: %w", err)
+	}
+	if err := g.runCmd(context.Background(), "config", "--global", "user.email", email); err != nil {
+		return fmt.Errorf("failed to set git committer email: %w", err)
+	}
+	githubactions.Infof("Configured git with committer '%s' and email '%s'", committer, email)
+	return nil
 }
 
 // Fetch fetches the specified ref from the given remote with the provided depth.
@@ -139,8 +155,6 @@ func (g *Git) runCmd(ctx context.Context, args ...string) error {
 func (g *Git) prepareCMD(ctx context.Context, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, "git", args...)
 	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, fmt.Sprintf("GIT_COMMITTER_NAME=%s", g.Committer))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("GIT_COMMITTER_EMAIL=%s", g.Email))
 	// Redirect everything to the standard output where GitHub Actions can capture it
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
