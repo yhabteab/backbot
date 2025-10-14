@@ -87,18 +87,24 @@ func (g *Git) CherryPick(ctx context.Context, commitOnConflict bool, commits ...
 	githubactions.Infof("Cherry-picking commits using git %v", cmd)
 
 	if err := g.runCmd(ctx, append(cmd, commits...)...); err != nil {
+		cherryPickAbort := func() {
+			// Attempt to abort the cherry-pick operation if it failed
+			if abortErr := g.runCmd(ctx, "cherry-pick", "--abort"); abortErr != nil {
+				githubactions.Warningf("Failed to abort cherry-pick after error: %v", abortErr)
+			}
+		}
+
 		if commitOnConflict {
 			if IsConflictErr(err) {
 				githubactions.Warningf("Conflict occurred while cherry-picking commits %v, creating draft commit: %v", commits, err)
-				if err := g.runCmd(ctx, "commit", "--allow-empty", "--all", "--message", "Backport commit with conflicts, needs manual resolution"); err != nil {
-					return fmt.Errorf("failed to create draft commit after conflict: %w", err)
+				if commitErr := g.runCmd(ctx, "commit", "--allow-empty", "--all", "--message", "Backport commit with conflicts, needs manual resolution"); err != nil {
+					cherryPickAbort()
+					err = fmt.Errorf("failed to create draft commit after conflict: %v (original error: %w)", commitErr, err)
 				}
+				return err
 			}
 		}
-		// Attempt to abort the cherry-pick operation if it failed
-		if abortErr := g.runCmd(ctx, "cherry-pick", "--abort"); abortErr != nil {
-			githubactions.Warningf("Failed to abort cherry-pick after error: %v", abortErr)
-		}
+		cherryPickAbort()
 		return fmt.Errorf("failed to cherry-pick commits %v: %w", commits, err)
 	}
 	return nil
