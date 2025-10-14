@@ -1,6 +1,9 @@
 package git
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // ErrGitOp represents an error that occurred during a git operation.
 type ErrGitOp struct {
@@ -15,7 +18,9 @@ func NewErrGitOp(op string, err error, status int) *ErrGitOp {
 }
 
 // Error returns a formatted error message for the ErrGitOp.
-func (e *ErrGitOp) Error() string { return "git " + e.Op + " failed: " + e.Err.Error() }
+func (e *ErrGitOp) Error() string {
+	return fmt.Sprintf("command '%s' failed with %s", e.Op, e.Err.Error())
+}
 
 // Unwrap returns the underlying error.
 func (e *ErrGitOp) Unwrap() error { return e.Err }
