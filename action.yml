@@ -7,7 +7,7 @@ branding:
 
 inputs:
   github_token:
-    description: 'GitHub token with repo access'
+    description: 'GitHub token with permissions to create branches, pull requests, and comments. Typically, this is set to `${{ github.token }}`.'
     required: true
   committer:
     required: true
