@@ -107,6 +107,7 @@ func (g *Git) FindCommitRange(ctx context.Context, args ...string) ([]string, er
 
 	cmd := g.prepareCMD(ctx, append([]string{"rev-list", "--reverse"}, args...)...)
 	cmd.Stderr = nil // We want to handle exit errors down below
+	cmd.Stdout = nil // We want to capture the output
 	output, err := cmd.Output()
 	if err != nil {
 		var exitErr *exec.ExitError
