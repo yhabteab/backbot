@@ -65,6 +65,15 @@ func (b *backPorter) Run(ctx context.Context) error {
 		return nil
 	}
 
+	githubactions.Infof("Fetching commits for pull request #%d", srcPrNumber)
+	// Fetch the commits and merge commit of the source PR to ensure we have them locally.
+	if err := b.git.Fetch(ctx, sourcePr.GetHead().GetSHA(), sourcePr.GetCommits()); err != nil {
+		return fmt.Errorf("failed to fetch commits for PR #%d: %w", srcPrNumber, err)
+	}
+	if err := b.git.Fetch(ctx, sourcePr.GetMergeCommitSHA(), 1); err != nil {
+		return fmt.Errorf("failed to fetch merge commit for PR #%d: %w", srcPrNumber, err)
+	}
+
 	mk, err := b.github.MergeKind(ctx, sourcePr)
 	if err != nil {
 		return err
