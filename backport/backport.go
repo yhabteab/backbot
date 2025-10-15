@@ -113,25 +113,37 @@ func (b *backPorter) Run(ctx context.Context) error {
 		githubactions.Fatalf("Could not determine merge strategy '%s' for pull request #%d, skipping backport.", mk, srcPrNumber)
 	}
 
-	mergeCommitSHAs, err := b.git.FindCommitRange(ctx, "--merges", fmt.Sprintf("%s^..%s", commitSHAs[0], commitSHAs[len(commitSHAs)-1]))
-	if err != nil {
-		return err
-	}
-
-	if len(mergeCommitSHAs) != 0 {
-		if b.config.MergeCommitHandling == MergeCommitHandlingAbort {
-			githubactions.Warningf(
-				"Found merge commit(s) %v in pull request #%d, aborting backport as per configuration",
-				mergeCommitSHAs, srcPrNumber,
-			)
-			return b.github.CreateComment(ctx, srcPrNumber, fmt.Sprintf(
-				"⚠️ Found merge commit(s) %v in pull request #%d, backport aborted as per configuration.",
-				mergeCommitSHAs, srcPrNumber,
-			))
+	if mk != github.Squash && len(commitSHAs) != 0 { // Squash PR cannot have merge commits
+		mergeCommitSHAs, err := b.git.FindCommitRange(ctx, "--merges", fmt.Sprintf(
+			"%s^..%s",
+			commitSHAs[0],
+			commitSHAs[len(commitSHAs)-1]),
+		)
+		if err != nil {
+			return err
 		}
-		githubactions.Infof("Skipping merge commit %v as per configuration", mergeCommitSHAs)
-		// Remove merge commits from the list of commits to cherry-pick.
-		commitSHAs = slices.DeleteFunc(commitSHAs, func(s string) bool { return slices.Contains(mergeCommitSHAs, s) })
+
+		if len(mergeCommitSHAs) != 0 {
+			switch b.config.MergeCommitHandling {
+			case MergeCommitHandlingAbort:
+				githubactions.Warningf(
+					"Found merge commit(s) %v in pull request #%d, aborting backport as per configuration",
+					mergeCommitSHAs, srcPrNumber,
+				)
+				return b.github.CreateComment(ctx, srcPrNumber, fmt.Sprintf(
+					"⚠️ Found merge commit(s) %v in pull request #%d, backport aborted as per configuration.",
+					mergeCommitSHAs, srcPrNumber,
+				))
+			case MergeCommitHandlingSkip:
+				githubactions.Infof("Skipping merge commit %v as per configuration", mergeCommitSHAs)
+				// Remove merge commits from the list of commits to cherry-pick.
+				commitSHAs = slices.DeleteFunc(commitSHAs, func(s string) bool {
+					return slices.Contains(mergeCommitSHAs, s)
+				})
+			default:
+				githubactions.Infof("Cherry-picking merge commit(s) %v as per configuration", mergeCommitSHAs)
+			}
+		}
 	}
 
 	if len(commitSHAs) == 0 {
@@ -285,7 +297,7 @@ func (b *backPorter) getTargetRefs(ctx context.Context, sourcePr *v75github.Pull
 			continue
 		}
 		branch := matches[1]
-		if err := b.git.Fetch(ctx, fmt.Sprintf("+%[1]s:refs/remotes/origin/%[1]s", branch), 2); err != nil {
+		if err := b.git.Fetch(ctx, fmt.Sprintf("+%[1]s:refs/remotes/origin/%[1]s", branch), 1); err != nil {
 			githubactions.Warningf(
 				"Branch '%s' extracted from label '%s' does not exist in repository %s/%s. %v",
 				branch, label.GetName(), owner, repo, err,
