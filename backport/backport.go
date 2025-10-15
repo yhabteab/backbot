@@ -65,6 +65,12 @@ func (b *backPorter) Run(ctx context.Context) error {
 		return nil
 	}
 
+	githubactions.Infof("Fetching commits for pull request #%d with %d commits", srcPrNumber, sourcePr.GetCommits())
+	// Fetch the commits of the source PR to ensure we have them locally.
+	if err := b.git.Fetch(ctx, sourcePr.GetHead().GetSHA(), sourcePr.GetCommits()); err != nil {
+		return fmt.Errorf("failed to fetch commits for PR #%d: %w", srcPrNumber, err)
+	}
+
 	mk, err := b.github.MergeKind(ctx, sourcePr)
 	if err != nil {
 		return err
@@ -279,7 +285,7 @@ func (b *backPorter) getTargetRefs(ctx context.Context, sourcePr *v75github.Pull
 			continue
 		}
 		branch := matches[1]
-		if err := b.git.Fetch(ctx, branch, 2); err != nil {
+		if err := b.git.Fetch(ctx, fmt.Sprintf("+%[1]s:refs/remotes/origin/%[1]s", branch), 2); err != nil {
 			githubactions.Warningf(
 				"Branch '%s' extracted from label '%s' does not exist in repository %s/%s. %v",
 				branch, label.GetName(), owner, repo, err,

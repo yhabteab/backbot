@@ -46,10 +46,13 @@ func Configure(ghCtx *githubactions.GitHubContext, committer, email string) erro
 	return nil
 }
 
-// Fetch fetches the specified ref from the given remote with the provided depth.
+// Fetch fetches the specified ref from the remote origin with the given depth plus one.
+//
+// The depth is increased by one to ensure that we have enough commit history for operations like
+// finding commit ranges or cherry-picking, which may require knowledge of parent commits.
 func (g *Git) Fetch(ctx context.Context, ref string, depth int) error {
 	githubactions.Infof("Fetching from remote origin, ref %s, depth %d", ref, depth)
-	return g.runCmd(ctx, "fetch", "--depth", fmt.Sprintf("%d", depth), "origin", ref)
+	return g.runCmd(ctx, "fetch", "--depth", fmt.Sprint(depth+1), "origin", ref)
 }
 
 // Push pushes the specified branch to the given remote.
