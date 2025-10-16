@@ -55,11 +55,10 @@ func (g *Git) Fetch(ctx context.Context, ref string, depth int) error {
 	return g.runCmd(ctx, "fetch", "--depth", fmt.Sprintf("%d", depth+1), "origin", ref)
 }
 
-// Push pushes the specified ref to the remote origin using the provided GitHub token for authentication.
-func (g *Git) Push(ctx context.Context, ghToken, ref string) error {
+// Push pushes the specified branch to the given remote.
+func (g *Git) Push(ctx context.Context, ref string) error {
 	githubactions.Infof("Pushing branch %s to remote origin", ref)
-	upstream := strings.Replace(g.githubCtx.ServerURL, "https://", fmt.Sprintf("https://x-access-token:%s@", ghToken), 1)
-	return g.runCmd(ctx, "push", "--set-upstream", upstream, ref)
+	return g.runCmd(ctx, "push", "--set-upstream", "origin", ref)
 }
 
 // Checkout checks out the specified branch.

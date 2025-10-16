@@ -228,7 +228,7 @@ func (b *backPorter) cherryPick(ctx context.Context, srcPr *v75github.PullReques
 					)
 
 					// Push the backport branch with the draft commit to remote.
-					if err := b.git.Push(ctx, b.config.GitHubToken, backportRef); err != nil {
+					if err := b.git.Push(ctx, backportRef); err != nil {
 						githubactions.Errorf("Failed to push backport branch %s: %v", backportRef, err)
 						return nil
 					}
@@ -261,7 +261,7 @@ func (b *backPorter) cherryPick(ctx context.Context, srcPr *v75github.PullReques
 		return nil
 	}
 
-	if err := b.git.Push(ctx, b.config.GitHubToken, backportRef); err != nil {
+	if err := b.git.Push(ctx, backportRef); err != nil {
 		githubactions.Errorf("Failed to push backport branch %s: %v", backportRef, err)
 		return nil
 	}
