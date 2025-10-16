@@ -53,15 +53,16 @@ func (b *backPorter) makeNewPullRequest(sourcePr *github.PullRequest, target, ba
 // to the target branch. The steps include fetching the target branch, creating a worktree, cherry-picking
 // the commits, pushing the resolved branch, and cleaning up.
 func listManualSteps(refName string, commitSHAs []string) string {
+	worktree := strings.ReplaceAll(refName, "/", "-")
 	steps := []string{
 		fmt.Sprintf("git fetch origin %s", refName),
-		fmt.Sprintf("git worktree add --checkout backbot/%[1]s origin/%[1]s", refName),
-		fmt.Sprintf("cd backbot/%s", refName),
+		fmt.Sprintf("git worktree add --checkout %s origin/%[1]s", worktree, refName),
+		fmt.Sprintf("cd %s", worktree),
 		"git reset --hard HEAD^", // Reset the draft commit created during conflict.
 		fmt.Sprintf("git cherry-pick -x %s", strings.Join(commitSHAs, " ")),
-		"git push --force", // Force push the resolved backport branch.
-		"cd -",             // Go back to the main working directory.
-		fmt.Sprintf("git worktree remove backbot/%s", refName), // Clean up the worktree.
+		"git push --force",                              // Force push the resolved backport branch.
+		"cd -",                                          // Go back to the main working directory.
+		fmt.Sprintf("git worktree remove %s", worktree), // Clean up the worktree.
 	}
 	return strings.Join(steps, "\n")
 }
