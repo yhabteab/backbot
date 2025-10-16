@@ -41,7 +41,7 @@ func (b *backPorter) makeNewPullRequest(sourcePr *github.PullRequest, target, ba
 		Title:               github.Ptr(replacePlaceholders(b.config.Title, target, sourcePr)),
 		Head:                github.Ptr(backport),
 		Base:                github.Ptr(target),
-		Body:                github.Ptr(fmt.Sprintf("# Description\n\n%s", replacePlaceholders(b.config.Description, target, sourcePr))),
+		Body:                github.Ptr(replacePlaceholders(b.config.Description, target, sourcePr)),
 		MaintainerCanModify: github.Ptr(true),
 		Draft:               github.Ptr(draft),
 	}
