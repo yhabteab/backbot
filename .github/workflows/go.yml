@@ -6,6 +6,9 @@ on:
       - main
   pull_request: {}
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,25 +18,54 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.x
+          go-version-file: 'go.mod'
 
       - name: Install Dependencies
-        run: go get './...'
-
-      - name: Verify Dependencies
-        run: go mod tidy && go mod verify
+        run: go mod download
 
       - name: Build
         run: go build -v .
 
+      - name: Test
+        run: go test -race -v './...'
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
       - name: Vet
         run: go vet './...'
 
-      - name: Lint
+      - name: GolangCI Lint
         uses: golangci/golangci-lint-action@v8
         with:
           version: latest
           args: -E gosec
 
-      - name: Test
-        run: go test -race -v -vet=off './...'
+      - name: Go mod tidy
+        run: |
+          go mod tidy >/dev/null || exit 1
+          if ! diff="$(git diff -U1 --color --exit-code)"; then
+            echo "go.mod and/or go.sum are not up to date. Please run 'go mod tidy' and commit the changes."
+            echo "$diff"
+            git checkout -- .
+            exit 1
+          else
+            echo "go.mod and go.sum are up to date."
+          fi
+
+  vulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Go Vulnerabilities
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-file: 'go.mod'
