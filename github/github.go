@@ -59,6 +59,8 @@ func (c *Client) GetPrNumber() (int64, error) {
 //
 // Returns the pull request object or an error if the operation fails.
 func (c *Client) GetPR(ctx context.Context, prNumber int64) (*github.PullRequest, error) {
+	githubactions.Group(fmt.Sprintf("Retrieving PR #%d", prNumber))
+	defer githubactions.EndGroup()
 	owner, repo := c.Repo()
 	githubactions.Infof("Retrieving PR #%d from %s/%s", prNumber, owner, repo)
 
@@ -91,23 +93,6 @@ func (c *Client) CreatePR(ctx context.Context, pr *github.NewPullRequest) (*gith
 		return nil, fmt.Errorf("unexpected status code %d", resp.StatusCode)
 	}
 	return createdPr, nil
-}
-
-// IsCommitInPR checks if a commit with the given SHA is part of the specified pull request.
-//
-// Returns true if the commit is found in the pull request, false otherwise.
-// Returns an error if the operation fails.
-func (c *Client) IsCommitInPR(ctx context.Context, pr *github.PullRequest, sha string) (bool, error) {
-	commits, err := c.GetCommits(ctx, pr)
-	if err != nil {
-		return false, err
-	}
-	for _, commit := range commits {
-		if commit.GetSHA() == sha {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 // LabelPR adds the specified labels to a pull request.
