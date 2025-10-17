@@ -22,8 +22,10 @@ func NewGit(ghCtx *githubactions.GitHubContext) *Git { return &Git{githubCtx: gh
 
 // Configure sets up git with the specified committer name and email, and marks the workspace as a safe directory.
 func Configure(ghCtx *githubactions.GitHubContext, committer, email string) error {
-	g := NewGit(ghCtx)
+	githubactions.Group("Configuring git")
+	defer githubactions.EndGroup()
 	githubactions.Infof("Marking GitHub workspace '%s' as a safe directory", ghCtx.Workspace)
+	g := NewGit(ghCtx)
 	// Mark the current workspace as a safe directory to avoid some weird git errors [^1].
 	// [^1]: https://github.com/actions/runner-images/issues/6775
 	if err := g.runCmd(context.Background(), "config", "--global", "--add", "safe.directory", ghCtx.Workspace); err != nil {
@@ -51,31 +53,26 @@ func Configure(ghCtx *githubactions.GitHubContext, committer, email string) erro
 // The depth is increased by one to ensure that we have enough commit history for operations like
 // finding commit ranges or cherry-picking, which may require knowledge of parent commits.
 func (g *Git) Fetch(ctx context.Context, ref string, depth int) error {
+	githubactions.Group(fmt.Sprintf("Fetching %s", ref))
+	defer githubactions.EndGroup()
 	githubactions.Infof("Fetching from remote origin, ref %s, depth %d", ref, depth)
 	return g.runCmd(ctx, "fetch", "--depth", fmt.Sprint(depth+1), "origin", ref)
 }
 
 // Push pushes the specified branch to the given remote.
 func (g *Git) Push(ctx context.Context, ref string) error {
+	githubactions.Group(fmt.Sprintf("Pushing %s", ref))
+	defer githubactions.EndGroup()
 	githubactions.Infof("Pushing branch %s to remote origin", ref)
 	return g.runCmd(ctx, "push", "--set-upstream", "origin", ref)
 }
 
 // Checkout checks out the specified branch.
 func (g *Git) Checkout(ctx context.Context, ref, startPoint string) error {
+	githubactions.Group(fmt.Sprintf("Checking out %s", ref))
+	defer githubactions.EndGroup()
 	githubactions.Infof("Checking out branch %s from %s", ref, startPoint)
 	return g.runCmd(ctx, "switch", "--create", ref, startPoint)
-}
-
-// BranchExists checks if the specified branch exists in the given remote.
-func (g *Git) BranchExists(ctx context.Context, ref string) bool {
-	githubactions.Infof("Checking if branch %s exists", ref)
-	if err := g.runCmd(ctx, "show-ref", "--verify", "--quiet", fmt.Sprintf("refs/remotes/%s/%s", "origin", ref)); err != nil {
-		githubactions.Warningf("Failed to check if branch %s exists: %v", ref, err)
-		return false
-	}
-	githubactions.Infof("Branch %s exists", ref)
-	return true
 }
 
 // CherryPick applies the commit with the given hash to the current branch.
@@ -86,6 +83,8 @@ func (g *Git) BranchExists(ctx context.Context, ref string) bool {
 //
 // If a conflict occurs during cherry-picking, it will attempt to abort the operation before returning an error.
 func (g *Git) CherryPick(ctx context.Context, commitOnConflict bool, commits ...string) error {
+	githubactions.Group(fmt.Sprintf("CherryPicking %d commits", len(commits)))
+	defer githubactions.EndGroup()
 	cmd := append([]string{"cherry-pick", "--empty=drop", "--allow-empty", "-x"}, commits...)
 	githubactions.Infof("Cherry-picking commits using git %v", cmd)
 
@@ -113,6 +112,8 @@ func (g *Git) CherryPick(ctx context.Context, commitOnConflict bool, commits ...
 //
 // It returns a slice of commit hashes in chronological order (from oldest to newest).
 func (g *Git) FindCommitRange(ctx context.Context, args ...string) ([]string, error) {
+	githubactions.Group("Finding commits")
+	defer githubactions.EndGroup()
 	githubactions.Infof("Finding commit range for %s using git rev-list", args)
 
 	// Set a timeout to avoid hanging indefinitely

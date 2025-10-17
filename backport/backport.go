@@ -53,6 +53,9 @@ func (b *backPorter) Run(ctx context.Context) error {
 		return err
 	}
 
+	githubactions.Group("Starting backport process")
+	defer githubactions.EndGroup()
+
 	if !sourcePr.GetMerged() {
 		githubactions.Warningf("Pull request #%d is not merged, skipping backport.", srcPrNumber)
 		// See https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request_target.
