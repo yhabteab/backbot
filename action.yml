@@ -56,4 +56,4 @@ inputs:
 
 runs:
   using: docker
-  image: docker://ghcr.io/yhabteab/backbot:latest
+  image: docker://ghcr.io/yhabteab/backbot:edge
