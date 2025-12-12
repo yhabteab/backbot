@@ -5,7 +5,7 @@ go 1.25
 require (
 	github.com/google/go-github/v75 v75.0.0
 	github.com/icinga/icinga-go-library v0.8.1
-	github.com/sethvargo/go-githubactions v1.3.1
+	github.com/sethvargo/go-githubactions v1.3.2
 	github.com/stretchr/testify v1.11.1
 )
 
